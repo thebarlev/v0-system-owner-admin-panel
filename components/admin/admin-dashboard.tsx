@@ -5,6 +5,7 @@ import { AdminHeader } from "./admin-header"
 import { KpiCards } from "./kpi-cards"
 import { CompaniesTable } from "./companies-table"
 import { SettingsPanel } from "./settings-panel"
+import { ExportDataPanel } from "./export-data-panel"
 import type { Company, GlobalSetting, KpiData } from "@/lib/types/admin"
 
 interface AdminDashboardProps {
@@ -33,6 +34,10 @@ export function AdminDashboard({ adminName, kpiData, companies: initialCompanies
         </div>
 
         <KpiCards data={kpiData} />
+
+        <div className="mt-8">
+          <ExportDataPanel totalCompanies={companies.length} />
+        </div>
 
         <div className="mt-8">
           <CompaniesTable companies={companies} onStatusChange={handleStatusChange} />

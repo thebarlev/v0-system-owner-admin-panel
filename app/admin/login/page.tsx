@@ -15,6 +15,7 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [debugInfo, setDebugInfo] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -28,38 +29,77 @@ export default function AdminLoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    const supabase = createClient()
     setIsLoading(true)
     setError(null)
+    setDebugInfo(null)
 
     try {
+      const supabase = createClient()
+      console.log("[v0] Starting login for:", email)
+
+      // Step 1: Sign in with password
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (authError) throw authError
+      console.log("[v0] signInWithPassword result:", { data, authError })
 
-      if (!data.user) {
-        throw new Error("Login failed. Please try again.")
+      if (authError) {
+        console.log("[v0] Auth error:", authError.message)
+        setError(`Authentication failed: ${authError.message}`)
+        setIsLoading(false)
+        return
       }
 
-      // Check if user is a system admin
+      if (!data.user) {
+        setError("Login failed - no user returned")
+        setIsLoading(false)
+        return
+      }
+
+      console.log("[v0] User logged in:", data.user.id, data.user.email)
+      setDebugInfo(`User authenticated: ${data.user.id}`)
+
+      // Step 2: Check if user is a system admin
+      console.log("[v0] Checking system_admins for auth_user_id:", data.user.id)
+
       const { data: adminData, error: adminError } = await supabase
         .from("system_admins")
-        .select("id, role")
+        .select("id, role, email, name")
         .eq("auth_user_id", data.user.id)
         .single()
 
-      if (adminError || !adminData) {
+      console.log("[v0] system_admins query result:", { adminData, adminError })
+
+      if (adminError) {
+        console.log("[v0] Admin query error:", adminError.message)
+        setDebugInfo(`Admin check failed: ${adminError.message} (code: ${adminError.code})`)
         await supabase.auth.signOut()
-        throw new Error("You do not have permission to access the admin panel.")
+        setError(`Not authorized: ${adminError.message}`)
+        setIsLoading(false)
+        return
       }
 
+      if (!adminData) {
+        console.log("[v0] No admin record found")
+        setDebugInfo("No admin record found for this user")
+        await supabase.auth.signOut()
+        setError("You do not have admin permissions")
+        setIsLoading(false)
+        return
+      }
+
+      console.log("[v0] Admin found:", adminData)
+      setDebugInfo(`Admin found: ${adminData.name || adminData.email} (${adminData.role})`)
+
+      // Step 3: Redirect to admin dashboard
+      console.log("[v0] Redirecting to /admin...")
       router.push("/admin")
       router.refresh()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      console.log("[v0] Unexpected error:", err)
+      setError(err instanceof Error ? err.message : "An unexpected error occurred")
     } finally {
       setIsLoading(false)
     }
@@ -109,12 +149,18 @@ export default function AdminLoginPage() {
                       id="password"
                       type="password"
                       required
+                      minLength={6}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="h-11"
                     />
                   </div>
                   {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+                  {debugInfo && (
+                    <div className="rounded-lg bg-blue-500/10 p-3 text-sm text-blue-600 font-mono">
+                      Debug: {debugInfo}
+                    </div>
+                  )}
                   <Button type="submit" className="h-11 w-full font-medium" disabled={isLoading}>
                     {isLoading ? (
                       <>
