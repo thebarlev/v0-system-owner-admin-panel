@@ -1,14 +1,14 @@
 import type React from "react"
-import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import type { Metadata, Viewport } from "next"
+import { Inter, Geist_Mono } from "next/font/google"
 import "./globals.css"
 
-const _geist = Geist({ subsets: ["latin"] })
+const _inter = Inter({ subsets: ["latin", "hebrew"], variable: "--font-inter" })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "System Admin Panel",
-  description: "System Owner Administration Panel for Barlev",
+  title: "Barlev Accounting",
+  description: "Professional accounting services for your business",
   generator: "v0.app",
   icons: {
     icon: [
@@ -29,13 +29,19 @@ export const metadata: Metadata = {
   },
 }
 
+export const viewport: Viewport = {
+  themeColor: "#f5f6f8",
+  width: "device-width",
+  initialScale: 1,
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="he" dir="rtl">
       <body className="font-sans antialiased">{children}</body>
     </html>
   )
